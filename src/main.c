@@ -17,12 +17,36 @@ int main(void) {
         int pos_newline = strcspn(input, "\n");  // cerco la prima occorrenza di \n (quello prodotto da 'invio')
         input[pos_newline] = '\0';  // metto \0 al posto di \n
 
-        if (strcmp(input, "close") == 0) {
+        char* command = strtok(input, " "); // divido il comando sugli spazi
+        char* arg = strtok(NULL, " ");
+        
+        if (command == NULL) {
+            continue;
+        }
+
+
+        if (strcmp(command, "close") == 0) {
             printf("Addio...\n");
             break;
         }
-
-        printf("Comando inserito: %s\n", input);
+        else if (strcmp(command, "ls") == 0) {
+            printf("Comando inserito: ls\n");
+        }
+        else if (strcmp(command, "mkdir") == 0) {
+            printf("Comando inserito: mkdir\n");
+            if (arg != NULL) {
+                printf("Directory; %s\n", arg);
+            }
+        }
+        else if (strcmp(command, "touch") == 0) {
+            printf("Comando inserito: touch\n");
+            if (arg != NULL) {
+                printf("File: %s\n", arg);
+            }
+        }
+        else { 
+            printf("Che comando e' <%s> ?\n", input);
+        }
     }
 
     return 0;

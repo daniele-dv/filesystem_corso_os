@@ -1,7 +1,7 @@
 CC = gcc
 
-myfs: src/main.c
-	$(CC) src/main.c -o myfs
+myfs: src/main.c src/comandi.c src/comandi.h
+	$(CC) src/main.c src/comandi.c -o myfs
 
 clean:
 	rm -f myfs

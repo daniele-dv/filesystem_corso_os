@@ -32,6 +32,7 @@ int interpreta_comando(char* input) {
         comando_format(arg, dim);
     }
     else if (strcmp(command, "close") == 0) {
+        comando_close();
         printf("Addio...\n");
         return 1;
     }

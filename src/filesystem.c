@@ -2,12 +2,14 @@
 #include <fcntl.h>  // open() - O_RDWR - O_CREAT - O_TRUNC
 #include <unistd.h> // ftruncate() - close()
 #include <sys/mman.h>   // mmap() - munmap() - msync() - PROT_READ - PROT_WRITE - MAP_SHARED - MS_SYNC - MAP_FAILED
+#include <string.h> // memset() - strcpy()
 #include "filesystem.h"
 
 // static -> VALIDE PER TUTTA L'ESECUZIONE DEL PROGRAMMA
 static int descrittore_fs = -1;
 static unsigned char* memoria_fs = NULL;
 static long dimensione_fs = 0;
+static int inode_directory_corrente = -1;
 
 int comando_format(const char* file, long dim) {
 
@@ -18,6 +20,13 @@ int comando_format(const char* file, long dim) {
 
     if (dim <= 0) {
         printf("ERRORE: devo avere dim > 0\n");
+        return -1;
+    }
+    
+    long spazio_metadati = (long)sizeof(Superblocco) + (long)(MAX_INODE * sizeof(Inode));
+
+    if (dim <= spazio_metadati) {
+        printf("ERRORE: dimensione insufficiente per questo tipo di FS\n");
         return -1;
     }
 
@@ -46,6 +55,30 @@ int comando_format(const char* file, long dim) {
     }
 
     dimensione_fs = dim;
+    
+    Superblocco* superblocco = (Superblocco*)memoria_fs;    // Interpreto i byte iniziali della memoria come un superblocco
+    memset(superblocco, 0, sizeof(Superblocco));
+    strcpy(superblocco->n_magico, MAGIC_FS);
+    superblocco->dimensione_totale = dim;
+    superblocco->max_numero_inode = MAX_INODE;
+    superblocco->offset_tabella_inode = (long)sizeof(Superblocco);
+    superblocco->offset_area_dati = (long)sizeof(Superblocco) + (long)(MAX_INODE * sizeof(Inode));
+    superblocco->root_inode = 0;
+    superblocco->inizio_spazio_libero = superblocco->offset_area_dati;
+
+
+    Inode* tabella_inode = (Inode*)(memoria_fs + superblocco->offset_tabella_inode);
+    memset(tabella_inode, 0, MAX_INODE * sizeof(Inode));
+    Inode* root = &tabella_inode[0];
+    root->usato = 1;
+    root->tipo = TIPO_DIRECTORY;
+    root->padre = -1;
+    strcpy(root->nome, "/");
+    root->dimensione_dati = 0;
+    root->offset_dati = -1;
+
+    inode_directory_corrente = 0;   // appena formatto parto dalla root
+
     printf("Filesystem formattato: %s (%ld byte)\n", file, dim);
 
     return 0;
@@ -67,6 +100,7 @@ int comando_close(void) {
 
     memoria_fs = NULL;
     dimensione_fs = 0;
+    inode_directory_corrente = -1; // chiuso il FS non sono piu in nessuna directory
 
     if (close(descrittore_fs) == -1) {
         perror("Errore durante la chiusura del FS");

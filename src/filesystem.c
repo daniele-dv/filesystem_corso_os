@@ -111,3 +111,39 @@ int comando_close(void) {
 
     return 0;
 }
+
+
+
+int comando_list(void) {
+    
+    if (memoria_fs == NULL) {   // gestisco ls se usato prima di format
+        printf("ERRORE: nessun FS aperto\n");
+        return -1;
+    }
+
+    Superblocco* superblocco = (Superblocco*) memoria_fs;
+
+    Inode* tabella_inode = (Inode*) (memoria_fs + superblocco->offset_tabella_inode);
+    
+    int elementi_trovati = 0;   // cosi so se la dir che sto esaminando e' vuota o no
+
+    for (int i = 0; i < superblocco->max_numero_inode; i++) {
+        if (tabella_inode[i].usato == 1 && tabella_inode[i].padre == inode_directory_corrente) {
+            // scrivo diversamente se ho trovato una cartella o un file per capire cosa e' cosa
+            if (tabella_inode[i].tipo == TIPO_DIRECTORY) {
+                printf("%s/ \n", tabella_inode[i].nome);
+            }
+            else {
+                printf("%s\n", tabella_inode[i].nome);
+            }
+
+            elementi_trovati++;
+        }
+    }
+
+    if (elementi_trovati == 0) {
+        printf("Nessun elemento trovato\n");
+    }
+
+    return 0;
+}

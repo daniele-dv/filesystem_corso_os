@@ -37,7 +37,7 @@ int interpreta_comando(char* input) {
         return 1;
     }
     else if (strcmp(command, "ls") == 0) {
-        printf("Comando inserito: ls\n");
+        comando_list();
     }
     else if (strcmp(command, "mkdir") == 0) {
         if (arg == NULL) {

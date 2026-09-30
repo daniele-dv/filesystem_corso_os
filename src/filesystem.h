@@ -29,5 +29,6 @@ typedef struct {
 
 int comando_format(const char* file, long dim);
 int comando_close(void);
+int comando_list(void);
 
 #endif

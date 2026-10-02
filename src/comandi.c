@@ -44,7 +44,7 @@ int interpreta_comando(char* input) {
             printf("Riprova: mkdir <nome_directory>\n");
             return 0;
         }
-        printf("Creazione directory %s\n", arg);
+        comando_make_directory(arg);
     }
     else if (strcmp(command, "touch") == 0) {
         if (arg == NULL) {

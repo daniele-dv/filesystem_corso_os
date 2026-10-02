@@ -30,5 +30,6 @@ typedef struct {
 int comando_format(const char* file, long dim);
 int comando_close(void);
 int comando_list(void);
+int comando_make_directory(const char* nome);
 
 #endif

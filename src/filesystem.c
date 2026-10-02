@@ -5,7 +5,7 @@
 #include <string.h> // memset() - strcpy()
 #include "filesystem.h"
 
-// static -> VALIDE PER TUTTA L'ESECUZIONE DEL PROGRAMMA
+// static -> VALIDE PER TUTTA L'ESECUZIONE DEL PROGRAMMA E ACCESSIBILI SOLO DA QUESTO FILE
 static int descrittore_fs = -1;
 static unsigned char* memoria_fs = NULL;
 static long dimensione_fs = 0;
@@ -144,6 +144,66 @@ int comando_list(void) {
     if (elementi_trovati == 0) {
         printf("Nessun elemento trovato\n");
     }
+
+    return 0;
+}
+
+
+
+int comando_make_directory(const char* nome) {
+    if (memoria_fs == NULL) {
+        printf("ERRORE: nessun FS aperto\n");
+        return -1;
+    }
+
+    if (nome == NULL || strlen(nome) == 0) {
+        printf("ERRORE: non possono esistere directory senza nome\n");
+        return -1;
+    }
+
+    if (strlen(nome) >= LUNGHEZZA_NOME) {
+        printf("ERRORE: nome della directory troppo lungo\n");
+        return -1;
+    }
+
+    if (strcmp(nome, ".") == 0 || strcmp(nome, "..") == 0 || strchr(nome, '/') != NULL) {    // strchr(...) cerca se nel nome compare il carattere '/'
+        printf("ERRORE: Il nome inserito non e' valido\n");
+        return -1;
+    }
+
+    Superblocco* superblocco = (Superblocco*) memoria_fs;
+    Inode* tabella_inode = (Inode*) (memoria_fs + superblocco->offset_tabella_inode);
+
+    for (int i = 0; i < superblocco->max_numero_inode; i++) {
+        if (tabella_inode[i].usato == 1 && tabella_inode[i].padre == inode_directory_corrente && strcmp(tabella_inode[i].nome, nome) == 0) {
+            printf("ERRORE: nome gia usato da un altro elemento\n");    // puo essere sia un file che una direcctory
+            return -1;
+        }
+    }
+
+    int inode_libero = -1;
+
+    for (int i = 0; i < superblocco->max_numero_inode; i++) {
+        if (tabella_inode[i].usato == 0) {
+            inode_libero = i;
+            break;
+        }
+    }
+
+    if (inode_libero == -1) {
+        printf("ERRORE: tutti gli inode sono gia' occupati\n");
+        return -1;
+    }
+
+    Inode* new_dir = &tabella_inode[inode_libero];
+    memset(new_dir, 0, sizeof(Inode));  // azzero l'inode prima di inizializzarlo
+
+    new_dir->usato = 1;
+    new_dir->tipo = TIPO_DIRECTORY;
+    new_dir->padre = inode_directory_corrente;
+    strcpy(new_dir->nome, nome);
+    new_dir->dimensione_dati = 0;
+    new_dir->offset_dati = -1;
 
     return 0;
 }

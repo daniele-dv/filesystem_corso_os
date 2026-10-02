@@ -24,7 +24,7 @@ int main(void) {
         }
     }
 
-    comando_close();    // mi assicuro di chiudere correttamente il FS indipendentemente da come chiudo la shell (close o ctrl+D)
+    comando_close();    // mi assicuro di chiudere correttamente il FS anche se sono uscito senza close (es. ctrl+D)
 
     return 0;
 }

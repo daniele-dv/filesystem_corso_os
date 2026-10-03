@@ -207,3 +207,54 @@ int comando_make_directory(const char* nome) {
 
     return 0;
 }
+
+
+int comando_change_directory(const char* nome) {
+    if (memoria_fs == NULL) {
+        printf("ERRORE: nessun FS aperto\n");
+        return -1;
+    }
+
+    if (nome == NULL || strlen(nome) == 0) {
+        printf("ERRORE: inserire il nome della directory\n");
+        return -1;
+    }
+
+    Superblocco* superblocco = (Superblocco*) memoria_fs;
+
+    Inode* tabella_inode = (Inode*)(memoria_fs + superblocco->offset_tabella_inode);
+
+    if (strcmp(nome, "/") == 0) {
+        inode_directory_corrente = superblocco->root_inode;
+        return 0;
+    }
+
+    if (strcmp(nome, ".") == 0) {
+        return 0;
+    }
+
+    if (strcmp(nome, "..") == 0) {
+        Inode* current_dir = &tabella_inode[inode_directory_corrente];  // recupero l'inode della dir in cui mi trovo
+        if (current_dir->padre != -1) { // a meno che non sono nella root, posso entrare nel padre
+            inode_directory_corrente = current_dir->padre;
+        }
+        return 0;
+    }
+
+    // Cambio dir passando ad una dir specifica
+    for (int i = 0; i < superblocco->max_numero_inode; i++) {
+        if (tabella_inode[i].usato == 1 && tabella_inode[i].padre == inode_directory_corrente 
+                                        && strcmp(tabella_inode[i].nome, nome) == 0) {
+            if (tabella_inode[i].tipo != TIPO_DIRECTORY) {
+                printf("ERRORE: %s non e' una directory\n", nome);
+                return -1;
+            }
+
+            inode_directory_corrente = i;
+            return 0;
+        }
+    }
+
+    printf("ERRORE: la directory %s non esiste\n", nome);
+    return -1;
+}

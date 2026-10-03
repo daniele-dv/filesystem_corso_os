@@ -31,5 +31,6 @@ int comando_format(const char* file, long dim);
 int comando_close(void);
 int comando_list(void);
 int comando_make_directory(const char* nome);
+int comando_change_directory(const char* nome);
 
 #endif

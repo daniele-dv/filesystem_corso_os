@@ -46,6 +46,13 @@ int interpreta_comando(char* input) {
         }
         comando_make_directory(arg);
     }
+    else if (strcmp(command, "cd") == 0) {
+        if (arg == NULL) {
+            printf("Riprova: cd <nome_directory>\n");
+            return 0;
+        }
+        comando_change_directory(arg);
+    }
     else if (strcmp(command, "touch") == 0) {
         if (arg == NULL) {
             printf("Riprova: touch <nome_file>\n");

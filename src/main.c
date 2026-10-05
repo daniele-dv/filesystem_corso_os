@@ -10,7 +10,7 @@ int main(void) {
     char input[MAX_COMMAND];
     
     while (1) {
-        printf("myfs> ");
+        print_prompt();
         
         if (fgets(input, sizeof(input), stdin) == NULL) {
             break;

@@ -258,3 +258,37 @@ int comando_change_directory(const char* nome) {
     printf("ERRORE: la directory %s non esiste\n", nome);
     return -1;
 }
+
+
+void print_prompt(void) {
+    if (memoria_fs == NULL) {   // se non ho aperto ancora un FS rimango sul classico
+        printf("myfs> ");
+        return;
+    }
+
+    // else {...}
+    Superblocco* superblocco = (Superblocco*) memoria_fs;
+    Inode* tabella_inode = (Inode*)(memoria_fs + superblocco->offset_tabella_inode);
+
+    printf("myfs:/");
+
+    int percorso[MAX_INODE];
+    int lunghezza_percorso = 0;
+    int inode_corrente = inode_directory_corrente;
+
+    while (inode_corrente != superblocco->root_inode) {  // risalgo dalla dir corrente alla root
+        percorso[lunghezza_percorso] = inode_corrente;
+        lunghezza_percorso++;
+        inode_corrente = tabella_inode[inode_corrente].padre;
+    }
+
+    for (int i = lunghezza_percorso - 1; i >= 0; i--) { // li stampo al contrario da come li ho salvati, parto dalla root alla dir corrente
+        int current_pos = percorso[i];
+        printf("%s", tabella_inode[current_pos].nome);
+        if (i != 0) {
+            printf("/");
+        }
+    }
+
+    printf("> ");
+}

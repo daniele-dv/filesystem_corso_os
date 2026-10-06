@@ -33,5 +33,6 @@ int comando_list(void);
 int comando_make_directory(const char* nome);
 int comando_change_directory(const char* nome);
 void print_prompt(void);
+int comando_touch(const char* nome);
 
 #endif

@@ -58,7 +58,7 @@ int interpreta_comando(char* input) {
             printf("Riprova: touch <nome_file>\n");
             return 0;
         }
-        printf("Creazione file %s\n", arg);
+        comando_touch(arg);
     }
     else {
         printf("Che comando e' <%s> ?\n", input);

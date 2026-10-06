@@ -292,3 +292,62 @@ void print_prompt(void) {
 
     printf("> ");
 }
+
+
+int comando_touch(const char* nome) {
+    if (memoria_fs == NULL) {
+        printf("ERRORE: nessun FS aperto\n");
+        return -1;
+    }
+
+    if (nome == NULL || strlen(nome) == 0) {
+        printf("ERRORE: non possono esistere file senza nome\n");
+        return -1;
+    }
+
+    if (strlen(nome) >= LUNGHEZZA_NOME) {
+        printf("ERRORE: nome del file troppo lungo\n");
+        return -1;
+    }
+
+    if (strcmp(nome, ".") == 0 || strcmp(nome, "..") == 0 || strchr(nome, '/') != NULL) { // strchr(...) cerca se nel nome compare il carattere '/'
+        printf("ERRORE: il nome inserito non e valido\n");
+        return -1;
+    }
+
+    Superblocco* superblocco = (Superblocco*) memoria_fs;
+    Inode* tabella_inode = (Inode*) (memoria_fs + superblocco->offset_tabella_inode);
+
+    for (int i = 0; i < superblocco->max_numero_inode; i++) {   // controllo che nella dir corrente non sia presente nulla (ne file ne dir) con il nome del file che voglio creare
+        if (tabella_inode[i].usato == 1 && tabella_inode[i].padre == inode_directory_corrente && strcmp(tabella_inode[i].nome, nome) == 0) {
+            printf("ERRORE: nome gia usato da un altro elemento\n");
+            return -1;
+        }
+    }
+
+    int inode_libero = -1;
+
+    for (int i = 0; i < superblocco->max_numero_inode; i++) {
+        if (tabella_inode[i].usato == 0) {
+            inode_libero = i;
+            break;
+        }
+    }
+
+    if (inode_libero == -1) {
+        printf("ERRORE: tutti gli inode sono già occupati\n");
+        return -1;
+    }
+
+    Inode* file_creato = &tabella_inode[inode_libero];
+    memset(file_creato, 0, sizeof(Inode));  // azzero l'inode che voglio assegnare al nuovo file
+
+    file_creato->usato = 1;
+    file_creato->tipo = TIPO_FILE;
+    file_creato->padre = inode_directory_corrente;
+    strcpy(file_creato->nome, nome);
+    file_creato->dimensione_dati = 0;
+    file_creato->offset_dati = -1; // sto creando un file vuoto, quindi non ha zone corrispondenti nell'area dati
+
+    return 0;
+}

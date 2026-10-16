@@ -60,6 +60,16 @@ int interpreta_comando(char* input) {
         }
         comando_touch(arg);
     }
+    else if (strcmp(command, "append") == 0) {
+        char* testo = strtok(NULL, "\n");
+        
+        if (arg == NULL || testo == NULL) {
+            printf("Riprova: append <nome_file> <testo>\n");
+            return 0;
+        }
+        
+        comando_append(arg, testo);
+    }
     else {
         printf("Che comando e' <%s> ?\n", input);
     }

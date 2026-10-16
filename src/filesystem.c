@@ -351,3 +351,113 @@ int comando_touch(const char* nome) {
 
     return 0;
 }
+
+
+int comando_append(const char* nome, const char* testo) {
+    if (memoria_fs == NULL) {
+        printf("ERRORE: nessun FS aperto\n");
+        return -1;
+    }
+
+    if (nome == NULL || testo == NULL) {
+        printf("ERRORE: nome del file o contenuto da inserire non valido\n");
+        return -1;
+    }
+
+    Superblocco* superblocco = (Superblocco*) memoria_fs;
+
+    Inode* tabella_inode = (Inode*) (memoria_fs + superblocco->offset_tabella_inode);
+
+    int inode_da_modificare = -1;
+
+    for (int i = 0; i < superblocco->max_numero_inode; i++) {   // cerco il file nella current_dir
+        if (tabella_inode[i].usato == 1 && tabella_inode[i].padre == inode_directory_corrente && strcmp(tabella_inode[i].nome, nome) == 0) {
+            inode_da_modificare = i;
+            break;
+        }
+    }
+
+    if (inode_da_modificare == -1) {
+        printf("ERRORE: il file %s non esiste\n", nome);
+        return -1;
+    }
+
+    Inode* file = &tabella_inode[inode_da_modificare];
+
+    if (file->tipo != TIPO_FILE) {
+        printf("ERRORE: %s non e' un file\n", nome);
+        return -1;
+    }
+
+    long lunghezza_testo = (long) strlen(testo);   // coerenza di tipo con dimensione_dati ed offset_dati
+
+    if (lunghezza_testo == 0) {
+        return 0;
+    }
+
+    /* CASO FILE VUOTO :
+     * Gli assegno per la prima volta una zona nell'area dati
+     */
+    if (file->dimensione_dati == 0) {
+        if (superblocco->inizio_spazio_libero + lunghezza_testo > superblocco->dimensione_totale) {
+            printf("ERRORE: spazio insufficiente nel FS\n");
+            return -1;
+        }
+
+        file->offset_dati = superblocco->inizio_spazio_libero;
+        
+        memcpy(memoria_fs + file->offset_dati, testo, lunghezza_testo);
+        
+        file->dimensione_dati = lunghezza_testo;
+
+        superblocco->inizio_spazio_libero += lunghezza_testo;
+
+        return 0;
+    }
+
+    /* CASO APPEND DIRETTO :
+     * Il file si trova alla fine dell'area dati occupata, quindi aggiungo testo
+     * senza spostare nulla
+     */
+    long fine_file = file->offset_dati + file->dimensione_dati;
+
+    if (fine_file == superblocco->inizio_spazio_libero) {
+        if (superblocco->inizio_spazio_libero + lunghezza_testo >superblocco->dimensione_totale) {
+            printf("ERRORE: spazio insufficiente nel FS\n");
+            return -1;
+        }
+        
+        memcpy(memoria_fs + superblocco->inizio_spazio_libero, testo, lunghezza_testo);
+
+        file->dimensione_dati += lunghezza_testo;
+
+        superblocco->inizio_spazio_libero += lunghezza_testo;
+        return 0;
+    }
+
+    /* CASO RIALLOCAZIONE FILE :
+     * Il fine si trova in mezzo, dunque copio il vecchio contenuto in un altro punto
+     * e poi aggiungo il testo
+     */
+    long nuova_dimensione = file->dimensione_dati + lunghezza_testo;
+
+    if (superblocco->inizio_spazio_libero + nuova_dimensione > superblocco->dimensione_totale) {
+        printf("ERRORE: spazio insufficiente nel FS\n");
+        return -1;
+    }
+
+    long new_offset = superblocco->inizio_spazio_libero;
+
+    // copio il vecchio contenuto nella nuova posizione
+    memcpy(memoria_fs + new_offset, memoria_fs + file->offset_dati, file->dimensione_dati);
+
+    // aggiungo il nuovo testo
+    memcpy(memoria_fs + new_offset + file->dimensione_dati, testo, lunghezza_testo);
+
+    file->offset_dati = new_offset;
+    file->dimensione_dati = nuova_dimensione;
+
+    superblocco->inizio_spazio_libero += nuova_dimensione;
+
+    return 0;
+}

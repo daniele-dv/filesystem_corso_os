@@ -461,3 +461,61 @@ int comando_append(const char* nome, const char* testo) {
 
     return 0;
 }
+
+
+int comando_cat(const char* nome) {
+    if (memoria_fs == NULL) {
+        printf("ERRORE: nessun FS aperto\n");
+        return -1;
+    }
+
+    if (nome == NULL || strlen(nome) == 0) {
+        printf("ERRORE: nome del file non valido\n");
+        return -1;
+    }
+
+    Superblocco* superblocco = (Superblocco*) memoria_fs;
+
+    Inode* tabella_inode = (Inode*)(memoria_fs + superblocco->offset_tabella_inode);
+
+    int inode_da_leggere = -1;
+
+    for (int i = 0; i < superblocco->max_numero_inode; i++) {   // cerco il file nella dir corrente
+        if (tabella_inode[i].usato == 1 && tabella_inode[i].padre == inode_directory_corrente && strcmp(tabella_inode[i].nome, nome) == 0) {
+            inode_da_leggere = i;
+            break;
+        }
+    }
+
+    if (inode_da_leggere == -1) {
+        printf("ERRORE: il file %s non esiste\n", nome);
+        return -1;
+    }
+
+    Inode* file = &tabella_inode[inode_da_leggere];
+
+    if (file->tipo != TIPO_FILE) {
+        printf("ERRORE: %s non e' file\n", nome);
+        return -1;
+    }
+
+    if (file->dimensione_dati == 0) {   // se il file è vuoto restituisco una riga vuota
+        printf("\n");
+        return 0;
+    }
+
+    if (file->offset_dati < superblocco->offset_area_dati || // il file punta ad una posizione occupata dai metadati
+        file->offset_dati > superblocco->dimensione_totale ||   // il contenuto che voglio leggere inizia oltre la fine della memoria mappata
+        file->dimensione_dati < 0 ||    // una dimensione negativa non ha senso
+        file->offset_dati + file->dimensione_dati > superblocco->dimensione_totale) {   // parte del contenuto del file che voglio leggere finisce fuori dal FS
+        
+        printf("ERRORE: posizione/dimensione del file non valida\n");
+        return -1;
+    }
+
+    // stampo nel terminale i byte che leggo
+    fwrite(memoria_fs + file->offset_dati, 1, file->dimensione_dati, stdout);   // non ho salvato '\0' dunque fwrite() meglio di printf()
+    printf("\n");
+
+    return 0;
+}

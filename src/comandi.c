@@ -70,6 +70,13 @@ int interpreta_comando(char* input) {
         
         comando_append(arg, testo);
     }
+    else if (strcmp(command, "cat") == 0) {
+        if (arg == NULL) {
+            printf("Riprova: cat <nome_file>\n");
+            return 0;
+        }
+        comando_cat(arg);
+    }
     else {
         printf("Che comando e' <%s> ?\n", input);
     }

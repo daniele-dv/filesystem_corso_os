@@ -519,3 +519,49 @@ int comando_cat(const char* nome) {
 
     return 0;
 }
+
+
+int comando_remove(const char* nome) {
+    if (memoria_fs == NULL) {
+        printf("ERRORE: nessun FS aperto\n");
+        return -1;
+    }
+
+    if (nome == NULL || strlen(nome) == 0 || strcmp(nome, ".") == 0 || strcmp(nome, "..") == 0 || strchr(nome, '/') != NULL) {
+        printf("ERRORE: nome non valido\n");
+        return-1;
+    }
+
+    Superblocco* superblocco = (Superblocco*) memoria_fs;
+    Inode* tabella_inode = (Inode*)(memoria_fs + superblocco->offset_tabella_inode);
+
+    int inode_da_eliminare = -1;
+
+    for (int i = 0; i < superblocco->max_numero_inode; i++) {   // Cerco l'elemento soltanto nella dir corrente
+        if (tabella_inode[i].usato == 1 && tabella_inode[i].padre == inode_directory_corrente && strcmp(tabella_inode[i].nome, nome) == 0) {
+            inode_da_eliminare = i;
+            break;
+        }
+    }
+
+    if (inode_da_eliminare == -1) {
+        printf("ERRORE: %s non trovato\n", nome);
+        return -1;
+    }
+
+    Inode* elem = &tabella_inode[inode_da_eliminare];
+
+    if (elem->tipo == TIPO_DIRECTORY) { // Elimino una dir solo se vuota
+        for (int i = 0; i < superblocco->max_numero_inode; i++) {
+            if (tabella_inode[i].usato == 1 && tabella_inode[i].padre == inode_da_eliminare) {
+                printf("ERRORE: la directory '%s' contiene ancora qualcosa\n", nome);
+                return -1;
+            }
+        }
+    }
+
+    // Libero l'inode dell'elemento appena rimosso
+    memset(elem, 0, sizeof(Inode));     // Per ora libero gli inode con rm ma non recupero lo spazio dall'area dati
+
+    return 0;
+}

@@ -77,6 +77,13 @@ int interpreta_comando(char* input) {
         }
         comando_cat(arg);
     }
+    else if (strcmp(command, "rm") == 0) {
+        if (arg == NULL) {
+            printf("Riprova: rm <dir/file>\n");
+            return 0;
+        }
+        comando_remove(arg);
+    }
     else {
         printf("Che comando e' <%s> ?\n", input);
     }

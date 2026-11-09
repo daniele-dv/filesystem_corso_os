@@ -5,10 +5,21 @@
 
 #define MAX_COMMAND 1024
 
-int main(void) {
+int main(int argc, char* argv[]) {
 
     char input[MAX_COMMAND];
     
+    if (argc > 2) {
+        printf("Bisogna usare: %s [nome_file.fs]\n", argv[0]);
+        return 1;
+    }
+
+    if (argc == 2) {
+        if (comando_open(argv[1]) == -1) {
+            return 1;
+        }
+    }
+
     while (1) {
         print_prompt();
         

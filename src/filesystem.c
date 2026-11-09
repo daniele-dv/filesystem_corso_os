@@ -3,6 +3,8 @@
 #include <unistd.h> // ftruncate() - close()
 #include <sys/mman.h>   // mmap() - munmap() - msync() - PROT_READ - PROT_WRITE - MAP_SHARED - MS_SYNC - MAP_FAILED
 #include <string.h> // memset() - strcpy()
+#include <sys/stat.h>   // fstat() -> ottengo info sui file
+#include <limits.h>     // LONG_MAX
 #include "filesystem.h"
 
 // static -> VALIDE PER TUTTA L'ESECUZIONE DEL PROGRAMMA E ACCESSIBILI SOLO DA QUESTO FILE
@@ -563,5 +565,81 @@ int comando_remove(const char* nome) {
     // Libero l'inode dell'elemento appena rimosso
     memset(elem, 0, sizeof(Inode));     // Per ora libero gli inode con rm ma non recupero lo spazio dall'area dati
 
+    return 0;
+}
+
+
+int comando_open(const char* nome_file) {
+    if (memoria_fs != NULL) {
+        printf("ERRORE: un FS risulta già aperto\n");
+        return -1;
+    }
+
+    int new_descriptor = open(nome_file, O_RDWR);
+
+    if (new_descriptor == -1) {
+        perror("Errore nell'apertura del FS");
+        return -1;
+    }
+
+    // Recupero le informazioni sul file
+    struct stat info_file;  // struttura dati definita in <sys/stat.h>
+
+    if (fstat(new_descriptor, &info_file) == -1) {
+        perror("Errore nel recupero della dimensione");
+        close(new_descriptor);
+        return -1;
+    }
+
+    long spazio_metadati = (long)sizeof(Superblocco) + (long)(MAX_INODE * sizeof(Inode));
+
+    if (info_file.st_size <= spazio_metadati || info_file.st_size > LONG_MAX) {
+        printf("ERRORE: file non valido per questo FS\n");
+        close(new_descriptor);
+        return -1;
+    }
+
+    long new_dim = (long)info_file.st_size;
+
+    unsigned char* new_memory = mmap(NULL, new_dim, PROT_READ | PROT_WRITE, MAP_SHARED, new_descriptor, 0);
+
+    if (new_memory == MAP_FAILED) {
+        perror("Errore durante la mappatura del FS");
+        close(new_descriptor);
+        return -1;
+    }
+
+    Superblocco* superblocco = (Superblocco*)new_memory;
+
+    if (memcmp(superblocco->n_magico, MAGIC_FS, sizeof(MAGIC_FS)) != 0 ||   // Così da verificare che sto aprendo un file che è un FS creato da me
+       superblocco->dimensione_totale != new_dim ||
+       superblocco->max_numero_inode != MAX_INODE ||
+       superblocco->offset_tabella_inode != (long)sizeof(Superblocco) ||
+       superblocco->offset_area_dati != spazio_metadati ||
+       superblocco->root_inode != 0 ||
+       superblocco->inizio_spazio_libero < spazio_metadati ||
+       superblocco->inizio_spazio_libero > new_dim) {
+        printf("ERRORE: filesystem non valido\n");
+        munmap(new_memory, new_dim);
+        close(new_descriptor);
+        return -1;     
+    }
+
+    Inode* tabella_inode = (Inode*)(new_memory + superblocco->offset_tabella_inode);
+
+    if (tabella_inode[0].usato != 1 || tabella_inode[0].tipo != TIPO_DIRECTORY || tabella_inode[0].padre != -1) {   // Verifico che l'inode della root sia ancora valido
+        printf("ERRORE: la root proposta non e' valida\n");
+        munmap(new_memory, new_dim);
+        close(new_descriptor);
+        return -1;
+    }
+
+    // Assegno alla variabili static (descrittore, memoria_fs, ...) il FS che sto aprendo
+    descrittore_fs = new_descriptor;
+    memoria_fs = new_memory;
+    dimensione_fs = new_dim;
+    inode_directory_corrente = superblocco->root_inode; // Ogni volta che riapro un vecchio FS riparto dalla root
+
+    printf("Filesystem riaperto: %s\n", nome_file);
     return 0;
 }

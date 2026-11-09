@@ -37,5 +37,6 @@ int comando_touch(const char* nome);
 int comando_append(const char* nome, const char* testo);
 int comando_cat(const char* nome);
 int comando_remove(const char* nome);
+int comando_open(const char* nome_file);
 
 #endif

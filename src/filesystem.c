@@ -531,7 +531,7 @@ int comando_remove(const char* nome) {
 
     if (nome == NULL || strlen(nome) == 0 || strcmp(nome, ".") == 0 || strcmp(nome, "..") == 0 || strchr(nome, '/') != NULL) {
         printf("ERRORE: nome non valido\n");
-        return-1;
+        return -1;
     }
 
     Superblocco* superblocco = (Superblocco*) memoria_fs;

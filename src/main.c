@@ -28,6 +28,18 @@ int main(int argc, char* argv[]) {
         }
 
         size_t pos_newline = strcspn(input, "\n");  // cerco la prima occorrenza di \n (quello prodotto da 'invio')
+
+        if (input[pos_newline] == '\0' && pos_newline == MAX_COMMAND - 1) { // se il buffer è pieno e non contiene '\n'...
+            int carattere = getchar();
+            if (carattere != '\n' && carattere != EOF) {
+                while (carattere != '\n' && carattere != EOF) { // se non ho raggiunto fine riga o fine file...
+                    carattere = getchar();  // prendo un carattere alla volta senza salvarli da nessuna parte, dunque lo scarto
+                }
+                printf("ERRORE: comando troppo lungo\n");
+                continue;   // passo alla prossima iterazione di while(1)
+            }
+        }
+
         input[pos_newline] = '\0';  // metto \0 al posto di \n
         
         if (interpreta_comando(input) == 1) {

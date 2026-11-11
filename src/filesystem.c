@@ -133,7 +133,7 @@ int comando_list(void) {
         if (tabella_inode[i].usato == 1 && tabella_inode[i].padre == inode_directory_corrente) {
             // scrivo diversamente se ho trovato una cartella o un file per capire cosa e' cosa
             if (tabella_inode[i].tipo == TIPO_DIRECTORY) {
-                printf("%s/ \n", tabella_inode[i].nome);
+                printf("%s/\n", tabella_inode[i].nome);
             }
             else {
                 printf("%s\n", tabella_inode[i].nome);
@@ -320,7 +320,7 @@ int comando_touch(const char* nome) {
     Superblocco* superblocco = (Superblocco*) memoria_fs;
     Inode* tabella_inode = (Inode*) (memoria_fs + superblocco->offset_tabella_inode);
 
-    for (int i = 0; i < superblocco->max_numero_inode; i++) {   // controllo che nella dir corrente non sia presente nulla (ne file ne dir) con il nome del file che voglio creare
+    for (int i = 0; i < superblocco->max_numero_inode; i++) {   // controllo che nella dir corrente non sia già presente un file o una dir con il nome uguale a quello del file che voglio creare
         if (tabella_inode[i].usato == 1 && tabella_inode[i].padre == inode_directory_corrente && strcmp(tabella_inode[i].nome, nome) == 0) {
             printf("ERRORE: nome gia usato da un altro elemento\n");
             return -1;
@@ -438,7 +438,7 @@ int comando_append(const char* nome, const char* testo) {
     }
 
     /* CASO RIALLOCAZIONE FILE :
-     * Il fine si trova in mezzo, dunque copio il vecchio contenuto in un altro punto
+     * Il file si trova in mezzo, dunque copio il vecchio contenuto in un altro punto
      * e poi aggiungo il testo
      */
     long nuova_dimensione = file->dimensione_dati + lunghezza_testo;

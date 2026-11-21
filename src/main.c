@@ -42,12 +42,21 @@ int main(int argc, char* argv[]) {
 
         input[pos_newline] = '\0';  // metto \0 al posto di \n
         
-        if (interpreta_comando(input) == 1) {
-            break;
+        int risultato_comando = interpreta_comando(input);
+
+        if (risultato_comando == 2) {
+            return 1;   // termino il programma segnalando un errore
+        }
+
+        if (risultato_comando == 1) {
+            break;  // termino normalmente la shell
         }
     }
 
-    comando_close();    // mi assicuro di chiudere correttamente il FS anche se sono uscito senza close (es. ctrl+D)
+    if (comando_close() != 0) { // può restituire sia -1 che -2
+        fprintf(stderr, "ERRORE: chiusura del filesystem non completata\n");
+        return 1;
+    }
 
     return 0;
 }

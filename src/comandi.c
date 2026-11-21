@@ -36,7 +36,13 @@ int interpreta_comando(char* input) {
             printf("Riprova: <close>\n");
             return 0;   // uso 0 e non 1 così posso proseguire l'esecuzione
         }
-        comando_close();
+        int risultato = comando_close();
+        if (risultato == -1) {
+            return 0;   // ho un errore con msync()-munmap() -> mantengo attiva la shell
+        }
+        if (risultato == -2) {
+            return 2;   // errore nella close() -> termino il programma segnalando un errore
+        }
         printf("Addio...\n");
         return 1;
     }

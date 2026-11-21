@@ -93,6 +93,7 @@ int comando_close(void) {
 
     if (msync(memoria_fs, dimensione_fs, MS_SYNC) == -1) {  // sincronizzo regione mappata con il file effettivo
         perror("Errore con la sincronizzazione tra file e memoria mappata");
+        return -1;
     }
 
     if (munmap(memoria_fs, dimensione_fs) == -1) {
@@ -104,12 +105,13 @@ int comando_close(void) {
     dimensione_fs = 0;
     inode_directory_corrente = -1; // chiuso il FS non sono piu in nessuna directory
 
-    if (close(descrittore_fs) == -1) {
-        perror("Errore durante la chiusura del FS");
-        return -1;
-    }
-
+    int risultato_close = close(descrittore_fs);
     descrittore_fs = -1;
+
+    if (risultato_close == -1) {
+        perror("ATTENZIONE: mappatura rimossa, ma close() si è inceppato in un errore");
+        return -2;
+    }
 
     return 0;
 }
